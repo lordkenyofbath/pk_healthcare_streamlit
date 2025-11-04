@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import numpy_financial as npf
 import pandas as pd
 
 st.set_page_config(page_title="Pakistan Healthcare Feasibility (Pilot)", page_icon="🩺", layout="wide")
@@ -17,16 +18,6 @@ def simple_payback(capex, annual_fcfe):
     if annual_fcfe <= 0:
         return np.nan
     return capex / annual_fcfe
-
-def irr_from_flows(flows):
-    try:
-        return np.irr(flows)
-    except Exception:
-        # numpy>=1.20 moved IRR to numpy_financial; fallback brute force
-        rates = np.linspace(-0.9, 1.5, 481)
-        npvs = [np.npv(r, flows) if r != -1 else np.nan for r in rates]
-        idx = int(np.nanargmin(np.abs(npvs)))
-        return rates[idx]
 
 # ---------- Sidebar: Global assumptions
 with st.sidebar:
@@ -69,8 +60,8 @@ with tabs[0]:
     fcfe = ebitda - tax
 
     flows = [-capex] + [fcfe * ((1 + price_growth) ** (t-1)) for t in range(1, years+1)]
-    npv = np.npv(discount_rate, flows)
-    irr = irr_from_flows(flows)
+    npv = npf.npv(discount_rate, flows)
+    irr = npf.irr(flows)
     payback = simple_payback(capex, fcfe)
 
     st.markdown("### Results")
@@ -114,8 +105,8 @@ with tabs[1]:
         fcfe = ebitda - tax
         flows.append(fcfe)
 
-    npv = np.npv(discount_rate, flows)
-    irr = irr_from_flows(flows)
+    npv = npf.npv(discount_rate, flows)
+    irr = npf.irr(flows)
     payback = np.nan
     if flows[1] > 0:
         payback = simple_payback(-flows[0], flows[1])
@@ -161,8 +152,8 @@ with tabs[2]:
         fcfe_t = ebitda_t - tax_t
         flows.append(fcfe_t)
 
-    npv = np.npv(discount_rate, flows)
-    irr = irr_from_flows(flows)
+    npv = npf.npv(discount_rate, flows)
+    irr = npf.irr(flows)
     payback = simple_payback(capex, fcfe)
 
     st.markdown("### Results")
@@ -175,3 +166,5 @@ with tabs[2]:
     st.dataframe(m, use_container_width=True)
 
 st.caption("© MBBB Consulting | Ken Holden — Deliver First : Develop Second — Pilot feasibility tool")
+
+  
